@@ -2,7 +2,6 @@
 
 
 import numpy as np
-import numba
 import pyqtgraph as pg
 
 
@@ -30,7 +29,7 @@ class Simulation:
 
         self.wave_length = c / self.f
 
-        if f is not None:
+        if f is not None and self.dt is None:
             self.dt = 1 / (self.f * 50)
 
         if self.dt is not None:
@@ -46,7 +45,7 @@ class Simulation:
         self.er = np.ones_like(self.e)
 
         if self.source is not None:
-            self.add_source(self.source['amp'], self.source['f'], self.source['t0'])
+            self.add_source(self.source['amp'], self.source['f'], self.source['t0'], self.source['cycles'])
 
     def add_slab(self, er, start, end):
         # Add a slab of material with relative permittivity er between start and end indices
@@ -58,12 +57,12 @@ class Simulation:
     def add_slab_m(self, er, start, end):
         self.add_slab(er, start/self.dx, end/self.dx)
 
-    def add_source(self, amp, f, t0=None):
+    def add_source(self, amp, f, t0=None, cycles=3):
         
         if t0 is None:
-            t0 = 1 / f * 10
+            t0 = (1/f) * cycles
 
-        self.source = {'amp': amp, 'f': f, 't0': t0}
+        self.source = {'amp': amp, 'f': f, 't0': t0, 'cycles': cycles}
 
 
 
@@ -96,6 +95,7 @@ def run_simulation(sim, plot=True):
         t0 = sim.source['t0']
         amp = sim.source['amp']
         f = sim.source['f']
+        cycles = sim.source['cycles']
         has_source = True
     else:
         has_source = False
@@ -114,8 +114,8 @@ def run_simulation(sim, plot=True):
         # Update the electric field
         e_next = update(e, e_last, er, dt, dx)
 
-        if has_source and t < t0:
-            source_value = amp * np.sin(2 * np.pi * f * t) #* np.exp(-((t - t0) ** 2) / (2 * (t0 / 10) ** 2))
+        if has_source and t <= t0:
+            source_value = amp * np.sin(2 * np.pi * f * t) * np.exp(-1/2*((t-t0/2)/(0.2))**2)/(0.2*np.sqrt(2*np.pi))/2
             e_next[0+offset] = source_value
 
         # Update fields for next iteration
