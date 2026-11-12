@@ -19,27 +19,36 @@ class Simulation:
         self.size = size        # Space size in meterss
         self.time_lim = time_lim # Time limit
         if self.time_lim is None:
-            self.time_lim = self.size / c
+            self.time_lim = self.size / c *1.5
         self.source = source
         self.s = s
         self.plot_interval = plot_interval
+
         if self.s is None:
             self.s = 0.7
+        
         self.f = f
 
         self.wave_length = c / self.f
 
+        if self.dx is not None and self.dt is not None:
+            print("S calculated as", c*self.dt/self.dx)
+
         if f is not None and self.dt is None:
             self.dt = 1 / (self.f * 50)
+            print("Set dt automatically")
 
-        if self.dt is not None:
+        if self.dt is not None and self.dx is None:
             self.dx = c * self.dt / self.s
+            print("Set dx automatically")
+
+
     
         # initialize space array
-        self.e = np.zeros(3*(int(self.size / self.dx) + 1))
+        self.e = np.zeros(int(self.size / self.dx))
 
         print(self.e.shape)
-        self.e_offset = int((self.size/self.dx)+1)
+        # self.e_offset = int(self.size/self.dx)
         self.e_last = self.e
         # er array
         self.er = np.ones_like(self.e)
@@ -49,8 +58,8 @@ class Simulation:
 
     def add_slab(self, er, start, end):
         # Add a slab of material with relative permittivity er between start and end indices
-            start_index = self.e_offset + int(np.floor(start))
-            end_index = self.e_offset + int(np.ceil(end))
+            start_index = int(np.floor(start))
+            end_index = int(np.ceil(end))
 
             self.er[start_index:end_index] = er
 
@@ -83,7 +92,7 @@ def run_simulation(sim, plot=True):
     er = sim.er.copy()
     dt = sim.dt
     dx = sim.dx
-    offset = sim.e_offset
+    # offset = sim.e_offset
     plot_interval = sim.plot_interval
 
     # Time-stepping loop
@@ -107,7 +116,7 @@ def run_simulation(sim, plot=True):
         window.setYRange(-2, 2, padding=0)
         curve = window.plot(e, pen='b')
 
-        x = np.arange(0, sim.size, sim.dx)
+        # x = np.arange(0, sim.size, sim.dx)
 
 
     while t < sim.time_lim:
@@ -116,7 +125,9 @@ def run_simulation(sim, plot=True):
 
         if has_source and t <= t0:
             source_value = amp * np.sin(2 * np.pi * f * t) * np.exp(-1/2*((t-t0/2)/(0.2))**2)/(0.2*np.sqrt(2*np.pi))/2
-            e_next[0+offset] = source_value
+            e_next[0] = source_value
+        else:
+            e_next[0] = 0
 
         # Update fields for next iteration
         e_last[:] = e
@@ -129,8 +140,12 @@ def run_simulation(sim, plot=True):
 
         if plot:
             if time_step % (plot_interval) < dt:
-                curve.setData(x, e[offset:offset+int(sim.size//dx)+1])
+                curve.setData(e)
                 app.processEvents()
+
+
+    
+    return e
 
 
 
