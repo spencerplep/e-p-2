@@ -10,6 +10,7 @@ c = 3e8
 
 # fs = np.linspace(1, 40e6, 101)
 fs = np.linspace(15e6, 25e6, 51)
+# fs = np.array([20e6])
 gammas = np.zeros_like(fs)
 g_test = []
 
@@ -42,7 +43,9 @@ for idx, f in zip(range(len(fs)), fs):
 
 
 plt.plot(fs/1e6, gammas)
-# plt.plot(g_test[-1])
+# plt.plot(np.linspace(0, 1, len(g_test[0])), g_test[0])
 plt.xlabel('Frequency (MHz)')
-plt.ylabel('Max Gamma')
+plt.ylabel('|Gamma|')
+# plt.ylabel('E-Field Amplitude')
+# plt.xlabel('Distance in meters')
 plt.show()
